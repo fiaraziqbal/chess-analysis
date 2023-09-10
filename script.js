@@ -1,5 +1,7 @@
 const chessboard = document.getElementById("chessboard");
 const pgnInput = document.getElementById("pgnInput");
+const moveList = []; // Array to store PGN moves
+let currentMoveIndex = 0; // Index of the current move
 
 // Chess piece symbols for the starting position
 const startingPosition = [
@@ -20,8 +22,10 @@ function loadPGN(file) {
         const pgnText = e.target.result;
         const moves = pgnText.split(/\d+\./).filter(move => move.trim() !== '');
 
-        // Reset the chessboard
+        // Reset the chessboard and move list
         chessboard.innerHTML = '';
+        moveList.length = 0;
+        currentMoveIndex = 0;
 
         // Create the chessboard cells and add pieces
         for (let row = 0; row < 8; row++) {
@@ -38,27 +42,40 @@ function loadPGN(file) {
             }
         }
 
-        // Move the pieces based on PGN moves
-        moves.forEach((move, index) => {
+        // Parse and store PGN moves
+        moves.forEach(move => {
             const moveText = move.trim().split(/\s+/);
-            const from = moveText[0];
-            const to = moveText[1];
-            const fromIndex = squareToIndex(from);
-            const toIndex = squareToIndex(to);
-
-            setTimeout(() => {
-                const fromCell = chessboard.children[fromIndex];
-                const toCell = chessboard.children[toIndex];
-                const piece = fromCell.querySelector(".chess-piece");
-
-                if (fromCell && toCell && piece) {
-                    toCell.appendChild(piece);
-                }
-            }, index * 1000); // Delay each move for 1 second (adjust as needed)
+            moveList.push(moveText);
         });
+
+        // Initial display of the starting position
+        displayMove(currentMoveIndex);
     };
 
     reader.readAsText(file);
+}
+
+function displayMove(index) {
+    if (index < 0 || index >= moveList.length) {
+        return;
+    }
+
+    const moveText = moveList[index];
+    const from = moveText[0];
+    const to = moveText[1];
+    const fromIndex = squareToIndex(from);
+    const toIndex = squareToIndex(to);
+
+    const fromCell = chessboard.children[fromIndex];
+    const toCell = chessboard.children[toIndex];
+
+    // Check if there is a piece in the 'fromCell'
+    const piece = fromCell.querySelector(".chess-piece");
+    
+    if (fromCell && toCell && piece) {
+        toCell.appendChild(piece);
+        console.log(`Move ${index + 1}: ${from} to ${to}`);
+    }
 }
 
 function squareToIndex(square) {
@@ -72,5 +89,21 @@ pgnInput.addEventListener("change", function () {
     const file = this.files[0];
     if (file) {
         loadPGN(file);
+    }
+});
+
+// Event listener for left arrow key (forward move)
+document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") {
+        currentMoveIndex++;
+        displayMove(currentMoveIndex);
+    }
+});
+
+// Event listener for right arrow key (backward move)
+document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") {
+        currentMoveIndex--;
+        displayMove(currentMoveIndex);
     }
 });
